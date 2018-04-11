@@ -1,9 +1,16 @@
 import requests
 import csv
 import os
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
+
+# Add stuff we'll need later
 save_path = "selected_works"
 my_csv = "trace.csv"
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+driver = webdriver.Chrome(executable_path=os.path.abspath("/home/mark/.virtualenvs/heather_selected_works/bin/chromedriver"),   chrome_options=chrome_options)
 
 
 class SelectedWork:
@@ -17,8 +24,12 @@ class SelectedWork:
     def __repr__(self):
         return f"A selected work called {self.title}."
 
-    def create_metadata_record(self):
-
+    def create_metadata_record(self, directory):
+        driver.get(self.url)
+        work_details = driver.find_element_by_css_selector("div.work-details")
+        print(f"Scraping metadata for {self.title}.")
+        with open(f"{save_path}/{directory}/metadata.txt", "w") as metadata:
+            metadata.write(work_details.text)
         return
 
     def grab_pdf(self, directory):
@@ -49,6 +60,7 @@ def main():
                     q = new_work.create_container()
                     if q is not None:
                         new_work.grab_pdf(q)
+                        new_work.create_metadata_record(q)
 
 
 if __name__ == "__main__":
