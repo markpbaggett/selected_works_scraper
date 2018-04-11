@@ -3,14 +3,16 @@ import csv
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import yaml
 
 
 # Add stuff we'll need later
-save_path = "selected_works"
-my_csv = "trace.csv"
+settings = yaml.load(open("config.yml", "r"))
+save_path = settings["output_directory"]
+my_csv = settings["csv"]
 chrome_options = Options()
 chrome_options.add_argument("--headless")
-driver = webdriver.Chrome(executable_path=os.path.abspath("/home/mark/.virtualenvs/heather_selected_works/bin/chromedriver"),   chrome_options=chrome_options)
+driver = webdriver.Chrome(executable_path=os.path.abspath(settings["chrome_path"]),   chrome_options=chrome_options)
 
 
 class SelectedWork:

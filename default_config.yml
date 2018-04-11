@@ -1,0 +1,4 @@
+output_directory: "PATH"
+csv: "PATH/TO/CSV.EXT"
+chrome_path: "PATH/TO/EXECUTABLE"
+
