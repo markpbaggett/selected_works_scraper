@@ -4,6 +4,7 @@ import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import yaml
+from time import sleep
 
 
 # Add stuff we'll need later
@@ -22,24 +23,42 @@ class SelectedWork:
         self.published = line[2]
         self.state = line[3]
         self.count = line[4]
+        self.statuscode = 404
 
     def __repr__(self):
         return f"A selected work called {self.title}."
 
     def create_metadata_record(self, directory):
-        driver.get(self.url)
-        work_details = driver.find_element_by_css_selector("div.work-details")
-        print(f"Scraping metadata for {self.title}.")
-        with open(f"{save_path}/{directory}/metadata.txt", "w") as metadata:
-            metadata.write(work_details.text)
+        if self.statuscode == 200:
+            try:
+                driver.get(self.url)
+                work_details = driver.find_element_by_css_selector("div.work-details")
+                print(f"Scraping metadata for {self.title}.")
+                with open(f"{save_path}/{directory}/metadata.txt", "w") as metadata:
+                    metadata.write(work_details.text)
+            except:
+                with open(f"error.log", "a") as error_log:
+                    error_log.write(f"Connection refused with {self.statuscode} on metadata"
+                                    f" for {directory} aka {self.title}.")
+                sleep(3)
+                self.create_metadata_record(directory)
         return
 
     def grab_pdf(self, directory):
         r = requests.get(f"{self.url}/download/")
-        if r.status_code == 200:
-            print(f"Downloading PDF for {self.title}.")
-            with open(f"{save_path}/{directory}/stamped.pdf", 'wb') as work:
-                work.write(r.content)
+        try:
+            if r.status_code == 200:
+                self.statuscode = r.status_code
+                print(f"Downloading PDF for {self.title}.")
+                with open(f"{save_path}/{directory}/stamped.pdf", 'wb') as work:
+                    work.write(r.content)
+        except requests.exceptions.ConnectionError:
+            self.statuscode = r.status_code
+            with open(f"error.log", "a") as error_log:
+                error_log.write(f"Connection refused with {r.status_code} on pdf for {directory} aka {self.title}.")
+            sleep(3)
+            self.grab_pdf(directory)
+
         return
 
     def create_container(self):
