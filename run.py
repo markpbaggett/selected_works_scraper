@@ -33,7 +33,7 @@ class SelectedWork:
             try:
                 driver.get(self.url)
                 work_details = driver.find_element_by_css_selector("div.work-details")
-                print(f"Scraping metadata for {self.title}.")
+                print(f"Scraping metadata for {self.title} at {directory}.")
                 with open(f"{save_path}/{directory}/metadata.txt", "w") as metadata:
                     metadata.write(work_details.text)
             except:
@@ -49,7 +49,7 @@ class SelectedWork:
         try:
             if r.status_code == 200:
                 self.statuscode = r.status_code
-                print(f"Downloading PDF for {self.title}.")
+                print(f"Downloading PDF for {self.title} at {directory}.")
                 with open(f"{save_path}/{directory}/stamped.pdf", 'wb') as work:
                     work.write(r.content)
         except requests.exceptions.ConnectionError:
