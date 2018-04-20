@@ -17,9 +17,6 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 driver = webdriver.Chrome(executable_path=os.path.abspath(settings["chrome_path"]),   chrome_options=chrome_options)
 
-# Our Log
-log_file = LogFile("works.log")
-
 
 class SelectedWork:
     def __init__(self, line):
@@ -43,17 +40,14 @@ class SelectedWork:
                 print(f"Scraping metadata for {self.title} at {directory}.")
                 with open(f"{save_path}/{directory}/metadata.txt", "w") as metadata:
                     metadata.write(work_details.text)
-                with open("works.log", "a") as log:
-                    log.write(f"\tSuccessfully harvested metadata for {self.title} at {directory}.\n")
+                log_file.write(f"\tSuccessfully harvested metadata for {self.title} at {directory}.\n")
             except (ProtocolError, AttributeError):
                 self.bad_record = True
-                with open(f"works.log", "a") as error_log:
-                    error_log.write(f"\tConnection refused with {self.statuscode} on metadata"
-                                    f" for {directory} aka {self.title}.\n")
+                log_file.write(f"\tConnection refused with {self.statuscode} on metadata for {directory} "
+                               f"aka {self.title}.\n")
             except:
-                with open(f"works.log", "a") as error_log:
-                    error_log.write(f"\tConnection refused with {self.statuscode} on metadata"
-                                    f" for {directory} aka {self.title}.\n")
+                log_file.write(f"\tConnection refused with {self.statuscode} on metadata for {directory} "
+                               f"aka {self.title}.\n")
                 sleep(3)
                 self.create_metadata_record(directory)
         return
@@ -61,7 +55,7 @@ class SelectedWork:
     def grab_pdf(self, directory):
         try:
             r = requests.get(f"{self.url}/download/", verify=False)
-            #print(r.headers)
+            # print(r.headers)
             content_type = None
             if r.headers["Content-Type"]:
                 content_type = r.headers["Content-Type"]
@@ -72,40 +66,34 @@ class SelectedWork:
                         print(f"Downloading PDF for {self.title} at {directory}.")
                         with open(f"{save_path}/{directory}/stamped.pdf", 'wb') as work:
                             work.write(r.content)
-                        with open("works.log", "a") as log:
-                            log.write(f"\tSuccessfully downloaded PDF for {self.title} at {directory}.\n")
+                        log_file.write(f"\tSuccessfully downloaded PDF for {self.title} at {directory}.\n")
                     else:
                         print(f"\tCould not download PDF.  Failed with {r.status_code}.\n")
                         self.bad_record = True
-                        with open("works.log", "a") as log:
-                            log.write(f"\tFailed to download PDF for {self.title} with {r.status_code}.\n")
+                        log_file.write(f"\tFailed to download PDF for {self.title} with {r.status_code}.\n")
                 except requests.exceptions.ConnectionError:
                     self.statuscode = r.status_code
                     self.bad_record = True
-                    with open(f"works.log", "a") as error_log:
-                        error_log.write(f"\tConnection refused with {r.status_code} on pdf for {directory} aka {self.title}.\n")
+                    log_file.write(f"\tConnection refused with {r.status_code} on pdf for {directory} "
+                                   f"aka {self.title}.\n")
                     sleep(3)
                     self.grab_pdf(directory)
                 except requests.ConnectionError as e:
                     self.statuscode = r.status_code
                     self.bad_record = True
-                    with open("works.log", "a") as error_log:
-                        error_log.write(f"\tFailed as {e}. Connection refused with {r.status_code} on pdf for {directory} aka {self.title}.\n")
+                    log_file.write(f"\tFailed as {e}. Connection refused with {r.status_code} on pdf for {directory} "
+                                   f"aka {self.title}.\n")
             else:
-                with open(f"works.log", "a") as error_log:
-                    error_log.write(f"\tNo PDF for {directory}.\n")
+                log_file.write(f"\tNo PDF for {directory}.\n")
                 self.bad_record = True
         except requests.exceptions.ConnectionError:
-            with open("works.log", "a") as error_log:
-                error_log.write(f"\tCould not download PDF for {directory}. Requests ConnectionError exception.\n")
+            log_file.write(f"\tCould not download PDF for {directory}. Requests ConnectionError exception.\n")
             self.bad_record = True
         except LocationValueError:
-            with open("works.log", "a") as error_log:
-                error_log.write(f"\tCould not download PDF for {directory}. No host specfied exception.\n")
+            log_file.write(f"\tCould not download PDF for {directory}. No host specfied exception.\n")
             self.bad_record = True
         except KeyError:
-            with open("works.log", "a") as error_log:
-                error_log.write(f"\tCould not download PDF for {directory}. Key Error.\n")
+            log_file.write(f"\tCould not download PDF for {directory}. Key Error.\n")
             self.bad_record = True
         return
 
@@ -114,8 +102,7 @@ class SelectedWork:
         try:
             os.mkdir(f"{save_path}/{self.dir_name}")
             print(f"Creating directory {self.dir_name}.")
-            with open("works.log", "a") as log:
-                log.write(f"Created directory for {self.dir_name}.\n")
+            log_file.write(f"Created directory for {self.dir_name}.\n")
             return self.dir_name
         except:
             print(f"{self.dir_name} with state {self.state} already exists!")
@@ -123,8 +110,8 @@ class SelectedWork:
 
     def cleanup_work(self):
         call(f"rm -rf {save_path}/{self.dir_name}/", shell=True)
-        with open("works.log", "a") as log:
-            log.write(f"\tRemoving directory {self.dir_name}.\n")
+        log_file.write(f"\tRemoving directory {self.dir_name}.\n")
+
 
 class LogFile:
     def __init__(self, name):
@@ -134,6 +121,7 @@ class LogFile:
         with open(self.name, "a") as log:
             log.write(message)
         return
+
 
 def main():
     with open(my_csv) as csv_file:
@@ -149,6 +137,9 @@ def main():
                         if new_work.bad_record is True:
                             new_work.cleanup_work()
 
+
+# Our Log
+log_file = LogFile("works.log")
 
 if __name__ == "__main__":
     main()
